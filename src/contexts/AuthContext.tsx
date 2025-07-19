@@ -236,38 +236,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   };
-        id: `app-${Date.now()}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      mockApplications.push(newApplication);
-      await refreshApplications();
-      return newApplication.id;
-    } catch (error) {
-      console.error('Error adding application:', error);
-      throw error;
-    }
-  };
-
-  const submitApplication = async (id: string) => {
-    try {
-      const appIndex = mockApplications.findIndex(app => app.id === id);
-      if (appIndex !== -1) {
-        mockApplications[appIndex] = {
-          ...mockApplications[appIndex],
-          status: 'pending',
-          current_level: 'sdm',
-          submitted_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        await refreshApplications();
-      }
-    } catch (error) {
-      console.error('Error submitting application:', error);
-      throw error;
-    }
-  };
 
   const updateApplicationStatus = async (id: string, status: Application['status'], notes?: string) => {
     if (!user) return;
