@@ -120,7 +120,7 @@ export function Login() {
             </div>
             <p className="text-xs text-blue-600 mt-2">
               Note: This is a demo system with in-memory data storage.
-            </div>
+            </p>
           </div>
         </div>
       </div>
