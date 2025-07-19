@@ -110,9 +110,6 @@ export function Login() {
           <div className="text-sm text-blue-700 space-y-1">
             <p><strong>Email:</strong> Use any demo email from the list below</p>
             <p><strong>Password:</strong> admin123</p>
-            <p className="text-xs text-blue-600 mt-2">
-              Note: In production, all passwords are securely hashed and never visible in the interface.
-            </p>
             <div className="mt-2 space-y-1">
               <p>• tehsildar@raipur.gov.in</p>
               <p>• sdm@raipur.gov.in</p>
@@ -120,9 +117,9 @@ export function Login() {
               <p>• oic@raipur.gov.in</p>
               <p>• adg@raipur.gov.in</p>
               <p>• collector@raipur.gov.in</p>
-              <p className="text-xs text-blue-600 mt-2">
-                <strong>Password:</strong> admin123 (required for demo accounts)
-              </p>
+            </div>
+            <p className="text-xs text-blue-600 mt-2">
+              Note: This is a demo system with in-memory data storage.
             </div>
           </div>
         </div>

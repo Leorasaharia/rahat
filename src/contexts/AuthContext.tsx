@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase, Profile, Application, Document, Approval } from '../lib/supabase';
-import { User, Session } from '@supabase/supabase-js';
+import { Profile, Application, Document, Approval } from '../lib/supabase';
 
 export type UserRole = 'tehsildar' | 'sdm' | 'rahat-operator' | 'oic' | 'adg' | 'collector';
 
@@ -10,7 +9,6 @@ export interface AuthUser extends Profile {
 
 interface AuthContextType {
   user: AuthUser | null;
-  session: Session | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -27,88 +25,21 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// In-memory storage for demo purposes
+let mockApplications: Application[] = [];
+let mockDocuments: Document[] = [];
+let mockApprovals: Approval[] = [];
+let mockProfiles: Profile[] = [];
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [applications, setApplications] = useState<Application[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        loadUserProfile(session.user);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      if (session?.user) {
-        await loadUserProfile(session.user);
-      } else {
-        setUser(null);
-        setApplications([]);
-        setDocuments([]);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    setLoading(false);
   }, []);
-
-  const loadUserProfile = async (authUser: User) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', authUser.id)
-        .single();
-
-      if (error && error.code === 'PGRST116') {
-        // Profile doesn't exist, create one
-        const newProfile = {
-          user_id: authUser.id,
-          email: authUser.email!,
-          role: getRoleFromEmail(authUser.email!),
-          display_name: 'User',
-          profile_complete: false,
-        };
-
-        const { data: createdProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert(newProfile)
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        
-        const authUserData: AuthUser = {
-          ...createdProfile,
-          name: createdProfile.display_name || 'User',
-        };
-        setUser(authUserData);
-      } else if (error) {
-        throw error;
-      } else {
-        const authUserData: AuthUser = {
-          ...profile,
-          name: profile.display_name || 'User',
-        };
-        setUser(authUserData);
-      }
-
-      await refreshApplications();
-    } catch (error) {
-      console.error('Error loading user profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getRoleFromEmail = (email: string): UserRole => {
     if (email.includes('tehsildar')) return 'tehsildar';
@@ -118,136 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (email.includes('adg')) return 'adg';
     if (email.includes('collector')) return 'collector';
     return 'tehsildar';
-  };
-
-  const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      // Demo mode: Check if it's a demo email and use demo password
-      const demoEmails = [
-        'tehsildar@raipur.gov.in',
-        'sdm@raipur.gov.in', 
-        'rahat@raipur.gov.in',
-        'oic@raipur.gov.in',
-        'adg@raipur.gov.in',
-        'collector@raipur.gov.in'
-      ];
-      
-      if (demoEmails.includes(email)) {
-        // For demo users, we'll simulate authentication
-        if (password === 'admin123') {
-          // Create a mock session for demo purposes
-          const mockUser = {
-            id: getDemoUserId(email),
-            email: email,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            email_confirmed_at: new Date().toISOString(),
-            app_metadata: {},
-            user_metadata: {},
-            aud: 'authenticated',
-            role: 'authenticated'
-          };
-          
-          // Load or create profile for demo user
-          await loadDemoUserProfile(mockUser);
-          return true;
-        } else {
-          console.error('Demo login failed: incorrect password');
-          return false;
-        }
-      }
-      
-      // Regular Supabase authentication for non-demo users
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('Login error:', error);
-        return false;
-      }
-
-      return !!data.user;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
-    }
-  };
-
-  const getDemoUserId = (email: string): string => {
-    const demoUserIds: { [key: string]: string } = {
-      'tehsildar@raipur.gov.in': '11111111-1111-1111-1111-111111111111',
-      'sdm@raipur.gov.in': '22222222-2222-2222-2222-222222222222',
-      'rahat@raipur.gov.in': '33333333-3333-3333-3333-333333333333',
-      'oic@raipur.gov.in': '44444444-4444-4444-4444-444444444444',
-      'adg@raipur.gov.in': '55555555-5555-5555-5555-555555555555',
-      'collector@raipur.gov.in': '66666666-6666-6666-6666-666666666666'
-    };
-    return demoUserIds[email] || email;
-  };
-
-  const loadDemoUserProfile = async (authUser: any) => {
-    try {
-      // Check if profile exists
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', authUser.email)
-        .single();
-
-      if (error && error.code === 'PGRST116') {
-        // Profile doesn't exist, create one
-        const newProfile = {
-          user_id: authUser.id,
-          email: authUser.email,
-          role: getRoleFromEmail(authUser.email),
-          display_name: getDemoDisplayName(authUser.email),
-          phone: getDemoPhone(authUser.email),
-          department: getDemoDepartment(authUser.email),
-          designation: getDemoDesignation(authUser.email),
-          profile_complete: true,
-        };
-
-        const { data: createdProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert(newProfile)
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        
-        const authUserData: AuthUser = {
-          ...createdProfile,
-          name: createdProfile.display_name || 'User',
-        };
-        setUser(authUserData);
-      } else if (error) {
-        throw error;
-      } else {
-        const authUserData: AuthUser = {
-          ...profile,
-          name: profile.display_name || 'User',
-        };
-        setUser(authUserData);
-      }
-
-      // Create mock session
-      const mockSession = {
-        access_token: 'demo-token',
-        refresh_token: 'demo-refresh',
-        expires_in: 3600,
-        expires_at: Date.now() + 3600000,
-        token_type: 'bearer',
-        user: authUser
-      };
-      setSession(mockSession as any);
-
-      await refreshApplications();
-    } catch (error) {
-      console.error('Error loading demo user profile:', error);
-      throw error;
-    }
   };
 
   const getDemoDisplayName = (email: string): string => {
@@ -298,31 +99,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return designations[email] || 'Government Officer';
   };
 
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const demoEmails = [
+        'tehsildar@raipur.gov.in',
+        'sdm@raipur.gov.in', 
+        'rahat@raipur.gov.in',
+        'oic@raipur.gov.in',
+        'adg@raipur.gov.in',
+        'collector@raipur.gov.in'
+      ];
+      
+      if (demoEmails.includes(email) && password === 'admin123') {
+        // Find or create profile
+        let profile = mockProfiles.find(p => p.email === email);
+        
+        if (!profile) {
+          profile = {
+            id: `profile-${Date.now()}`,
+            user_id: `user-${Date.now()}`,
+            email: email,
+            role: getRoleFromEmail(email),
+            display_name: getDemoDisplayName(email),
+            phone: getDemoPhone(email),
+            department: getDemoDepartment(email),
+            designation: getDemoDesignation(email),
+            profile_complete: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          mockProfiles.push(profile);
+        }
+        
+        const authUser: AuthUser = {
+          ...profile,
+          name: profile.display_name || 'User',
+        };
+        
+        setUser(authUser);
+        await refreshApplications();
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
+  };
+
   const logout = async () => {
-    await supabase.auth.signOut();
+    setUser(null);
+    setApplications([]);
+    setDocuments([]);
   };
 
   const updateProfile = async (profileData: Partial<Profile>) => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
+      const profileIndex = mockProfiles.findIndex(p => p.id === user.id);
+      if (profileIndex !== -1) {
+        mockProfiles[profileIndex] = {
+          ...mockProfiles[profileIndex],
           ...profileData,
           profile_complete: true,
-        })
-        .eq('id', user.id);
+          updated_at: new Date().toISOString(),
+        };
 
-      if (error) throw error;
-
-      const updatedUser: AuthUser = {
-        ...user,
-        ...profileData,
-        name: profileData.display_name || user.name,
-        profile_complete: true,
-      };
-      setUser(updatedUser);
+        const updatedUser: AuthUser = {
+          ...user,
+          ...profileData,
+          name: profileData.display_name || user.name,
+          profile_complete: true,
+        };
+        setUser(updatedUser);
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
@@ -330,51 +182,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshApplications = async () => {
-    if (!user) return;
-
-    try {
-      // Get applications with related data
-      const { data: appsData, error: appsError } = await supabase
-        .from('applications')
-        .select(`
-          *,
-          approvals (*)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (appsError) throw appsError;
-
-      // Get documents
-      const { data: docsData, error: docsError } = await supabase
-        .from('documents')
-        .select('*');
-
-      if (docsError) throw docsError;
-
-      setApplications(appsData || []);
-      setDocuments(docsData || []);
-    } catch (error) {
-      console.error('Error refreshing applications:', error);
-    }
+    setApplications([...mockApplications]);
+    setDocuments([...mockDocuments]);
   };
 
   const addApplication = async (applicationData: Omit<Application, 'id' | 'created_at' | 'updated_at'>): Promise<string> => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      const { data, error } = await supabase
-        .from('applications')
-        .insert({
-          ...applicationData,
-          created_by: user.id,
-        })
-        .select()
-        .single();
+      const newApplication: Application = {
+        ...applicationData,
+        id: `app-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
-      if (error) throw error;
-
+      mockApplications.push(newApplication);
       await refreshApplications();
-      return data.id;
+      return newApplication.id;
     } catch (error) {
       console.error('Error adding application:', error);
       throw error;
@@ -383,18 +208,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const submitApplication = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('applications')
-        .update({
+      const appIndex = mockApplications.findIndex(app => app.id === id);
+      if (appIndex !== -1) {
+        mockApplications[appIndex] = {
+          ...mockApplications[appIndex],
           status: 'pending',
           current_level: 'sdm',
           submitted_at: new Date().toISOString(),
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      await refreshApplications();
+          updated_at: new Date().toISOString(),
+        };
+        await refreshApplications();
+      }
     } catch (error) {
       console.error('Error submitting application:', error);
       throw error;
@@ -406,17 +230,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       // Add approval record
-      const { error: approvalError } = await supabase
-        .from('approvals')
-        .insert({
-          application_id: id,
-          approved_by: user.id,
-          role: user.role,
-          approved: status === 'approved' || status === 'payment-ready',
-          notes,
-        });
-
-      if (approvalError) throw approvalError;
+      const newApproval: Approval = {
+        id: `approval-${Date.now()}`,
+        application_id: id,
+        approved_by: user.id,
+        role: user.role,
+        approved: status === 'approved' || status === 'payment-ready',
+        notes,
+        created_at: new Date().toISOString(),
+      };
+      mockApprovals.push(newApproval);
 
       // Determine next level
       const roleHierarchy: UserRole[] = ['tehsildar', 'sdm', 'rahat-operator', 'oic', 'adg', 'collector'];
@@ -424,17 +247,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const nextLevel = currentIndex < roleHierarchy.length - 1 ? roleHierarchy[currentIndex + 1] : user.role;
 
       // Update application
-      const { error: updateError } = await supabase
-        .from('applications')
-        .update({
+      const appIndex = mockApplications.findIndex(app => app.id === id);
+      if (appIndex !== -1) {
+        mockApplications[appIndex] = {
+          ...mockApplications[appIndex],
           status,
           current_level: status === 'approved' ? nextLevel : user.role,
-        })
-        .eq('id', id);
-
-      if (updateError) throw updateError;
-
-      await refreshApplications();
+          updated_at: new Date().toISOString(),
+        };
+        await refreshApplications();
+      }
     } catch (error) {
       console.error('Error updating application status:', error);
       throw error;
@@ -445,33 +267,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${applicationId}/${documentType}.${fileExt}`;
+      const newDocument: Document = {
+        id: `doc-${Date.now()}`,
+        application_id: applicationId,
+        document_type: documentType,
+        file_name: file.name,
+        file_path: `documents/${applicationId}/${documentType}`,
+        file_size: file.size,
+        mime_type: file.type,
+        uploaded_by: user.id,
+        created_at: new Date().toISOString(),
+      };
 
-      // Upload file to storage
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(fileName, file, {
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Save document record
-      const { error: docError } = await supabase
-        .from('documents')
-        .upsert({
-          application_id: applicationId,
-          document_type: documentType,
-          file_name: file.name,
-          file_path: fileName,
-          file_size: file.size,
-          mime_type: file.type,
-          uploaded_by: user.id,
-        });
-
-      if (docError) throw docError;
-
+      // Remove existing document of same type for this application
+      mockDocuments = mockDocuments.filter(doc => 
+        !(doc.application_id === applicationId && doc.document_type === documentType)
+      );
+      
+      mockDocuments.push(newDocument);
       await refreshApplications();
     } catch (error) {
       console.error('Error uploading document:', error);
@@ -502,7 +315,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user,
-      session,
       loading,
       login,
       logout,
