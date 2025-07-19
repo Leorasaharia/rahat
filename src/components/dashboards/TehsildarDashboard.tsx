@@ -83,8 +83,16 @@ export function TehsildarDashboard() {
     if (newApplicationId) {
       try {
         await submitApplication(newApplicationId);
-        setShowSuccessModal(false);
-        setNewApplicationId(null);
+          applicant_name: formData.applicantName,
+          age: parseInt(formData.age),
+          sex: formData.sex,
+          date_of_birth: formData.dateOfBirth,
+          date_of_death: formData.dateOfDeath,
+          location: formData.location,
+          residential_address: formData.residentialAddress,
+          family_details: formData.familyDetails,
+          patwari_checked: formData.patwariChecked,
+          thana_incharge_checked: formData.thanaInchargeChecked,
         alert('Application successfully submitted to SDM for review!');
       } catch (error) {
         console.error('Error submitting application:', error);
