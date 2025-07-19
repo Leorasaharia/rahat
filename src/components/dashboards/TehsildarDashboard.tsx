@@ -420,12 +420,12 @@ export function TehsildarDashboard() {
               <div key={app.id} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">{app.applicantName}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">{app.applicant_name}</h3>
                     <p className="text-gray-600">Age: {app.age} | Location: {app.location}</p>
                     <p className="text-sm text-gray-500">
-                      Created: {new Date(app.createdAt).toLocaleDateString()}
-                      {app.submittedAt && (
-                        <span> | Submitted: {new Date(app.submittedAt).toLocaleDateString()}</span>
+                      Created: {new Date(app.created_at).toLocaleDateString()}
+                      {app.submitted_at && (
+                        <span> | Submitted: {new Date(app.submitted_at).toLocaleDateString()}</span>
                       )}
                     </p>
                   </div>

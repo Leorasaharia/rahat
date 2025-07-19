@@ -136,12 +136,12 @@ export function ApprovalDashboard({ role }: ApprovalDashboardProps) {
                 <div key={app.id} className="border border-gray-200 rounded-lg p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-800">{app.applicantName}</h3>
+                    <h3 className="text-xl font-semibold text-gray-800">{app.applicant_name}</h3>
                     <div className="grid md:grid-cols-2 gap-4 mt-2 text-sm text-gray-600">
                       <p><strong>Age:</strong> {app.age}</p>
                       <p><strong>Sex:</strong> {app.sex}</p>
-                      <p><strong>Date of Birth:</strong> {new Date(app.dateOfBirth).toLocaleDateString()}</p>
-                      <p><strong>Date of Death:</strong> {new Date(app.dateOfDeath).toLocaleDateString()}</p>
+                      <p><strong>Date of Birth:</strong> {new Date(app.date_of_birth).toLocaleDateString()}</p>
+                      <p><strong>Date of Death:</strong> {new Date(app.date_of_death).toLocaleDateString()}</p>
                       <p><strong>Location:</strong> {app.location}</p>
                       <p><strong>Submitted:</strong> {app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : 'N/A'}</p>
                     </div>

@@ -191,7 +191,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const newApplication: Application = {
-        ...applicationData,
+        id: `app-${Date.now()}`,
+        applicant_name: applicationData.applicant_name,
+        age: applicationData.age,
+        sex: applicationData.sex,
+        date_of_birth: applicationData.date_of_birth,
+        date_of_death: applicationData.date_of_death,
+        location: applicationData.location,
+        residential_address: applicationData.residential_address,
+        family_details: applicationData.family_details,
+        status: applicationData.status,
+        current_level: applicationData.current_level,
+        created_by: applicationData.created_by,
+        patwari_checked: applicationData.patwari_checked,
+        thana_incharge_checked: applicationData.thana_incharge_checked,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      mockApplications.push(newApplication);
+      await refreshApplications();
+      return newApplication.id;
+    } catch (error) {
+      console.error('Error adding application:', error);
+      throw error;
+    }
+  };
+
+  const submitApplication = async (id: string) => {
+    try {
+      const appIndex = mockApplications.findIndex(app => app.id === id);
+      if (appIndex !== -1) {
+        mockApplications[appIndex] = {
+          ...mockApplications[appIndex],
+          status: 'pending',
+          current_level: 'sdm',
+          submitted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        await refreshApplications();
+      }
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      throw error;
+    }
+  };
         id: `app-${Date.now()}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
