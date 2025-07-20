@@ -21,7 +21,7 @@ export function Login() {
       if (success) {
         navigate('/dashboard');
       } else {
-        setError('Invalid credentials. Please check your email and password.');
+        setError('Invalid email address. Please use one of the demo emails provided below.');
       }
     } catch (err) {
       setError('An error occurred during login. Please try again.');
@@ -109,7 +109,7 @@ export function Login() {
           <h3 className="font-semibold text-blue-800 mb-2">Demo Credentials</h3>
           <div className="text-sm text-blue-700 space-y-1">
             <p><strong>Email:</strong> Use any demo email from the list below</p>
-            <p><strong>Password:</strong> admin123</p>
+            <p><strong>Password:</strong> Any password (cannot be empty)</p>
             <div className="mt-2 space-y-1">
               <p>• tehsildar@raipur.gov.in</p>
               <p>• sdm@raipur.gov.in</p>
@@ -119,7 +119,7 @@ export function Login() {
               <p>• collector@raipur.gov.in</p>
             </div>
             <p className="text-xs text-blue-600 mt-2">
-              Note: This is a demo system with in-memory data storage.
+              Note: This is a demo system. You can use any password as long as it's not empty.
             </p>
           </div>
         </div>

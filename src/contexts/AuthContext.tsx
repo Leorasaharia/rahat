@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         'collector@raipur.gov.in'
       ];
       
-      if (demoEmails.includes(email) && password === 'admin123') {
+      if (demoEmails.includes(email) && password.trim() !== '') {
         // Find or create profile
         let profile = mockProfiles.find(p => p.email === email);
         
